@@ -8,14 +8,15 @@
 
 using namespace std;
 
-void send_error(int line_number, string error_message)
+void send_error(int line_number, string error_message, string file_name)
 {
-  cerr << "Erro na linha: " << line_number << ". " << endl;
+  cerr << "Foi encontrado um erro no arquivo: " << file_name;
+  cerr << " na linha: " << line_number << ". " << endl;
   cerr << error_message << endl;
   exit(1);
 }
 
-bool validate_number(string word, int line_number)
+bool validate_number(string word, int line_number,string file_name)
 {
   if (word[0] == '0' && word[1] == 'x')
   {
@@ -24,7 +25,7 @@ bool validate_number(string word, int line_number)
     {
       if (not(c >= '0' && c <= '9' || c >= 'A' && c <= 'F'))
       {
-        send_error(line_number, "'" + word + "' nao e um hexadecimal valido.");
+        send_error(line_number, "'" + word + "' nao e um hexadecimal valido.", file_name);
         return false;
       }
     }
@@ -33,7 +34,7 @@ bool validate_number(string word, int line_number)
 
     if (unconverted_characters != word.substr(2).length())
     {
-      send_error(line_number, "'" + word + "' nao e um hexadecimal valido.");
+      send_error(line_number, "'" + word + "' nao e um hexadecimal valido.", file_name);
     }
   }
   else if (word[0] == '-')
@@ -43,7 +44,7 @@ bool validate_number(string word, int line_number)
     {
       if (not(c >= '0' && c <= '9'))
       {
-        send_error(line_number, "'" + word + "' nao e um numero valido.");
+        send_error(line_number, "'" + word + "' nao e um numero valido.", file_name);
         return false;
       }
     }
@@ -54,7 +55,7 @@ bool validate_number(string word, int line_number)
     {
       if (not(c >= '0' && c <= '9'))
       {
-        send_error(line_number, "'" + word + "' nao e um numero valido.");
+        send_error(line_number, "'" + word + "' nao e um numero valido.", file_name);
         return false;
       }
     }
@@ -62,9 +63,9 @@ bool validate_number(string word, int line_number)
   return true;
 }
 
-int convert_string_to_int(string number, int line_number)
+int convert_string_to_int(string number, int line_number, string file_name)
 {
-  if (validate_number(number, line_number))
+  if (validate_number(number, line_number, file_name))
   {
     if (number[0] == '0' && number[1] == 'x')
     {
@@ -169,14 +170,14 @@ void pre_processor(string &input_file_name, string output_file_name)
         {
           if (dictionary.find(word) != dictionary.end())
           {
-            if (validate_number(dictionary[word], line_number))
+            if (validate_number(dictionary[word], line_number, input_file_name))
             {
               line_to_write += dictionary[word];
             }
           }
           else
           {
-            if (validate_number(word, line_number))
+            if (validate_number(word, line_number, input_file_name))
             {
               line_to_write += word;
             }
@@ -213,7 +214,7 @@ void pre_processor(string &input_file_name, string output_file_name)
           }
           else
           {
-            send_error(line_number, "'COPY' possui argumentos invalidos: " + word);
+            send_error(line_number, "'COPY' possui argumentos invalidos: " + word, input_file_name);
           }
         }
         else if (word == "COPY")
@@ -225,14 +226,14 @@ void pre_processor(string &input_file_name, string output_file_name)
         {
           if (dictionary.find(word) != dictionary.end())
           {
-            if (convert_string_to_int(dictionary[word], line_number) == 0)
+            if (convert_string_to_int(dictionary[word], line_number, input_file_name) == 0)
             {
               skip_next_line = true;
             }
           }
           else
           {
-            if (convert_string_to_int(word, line_number) == 0)
+            if (convert_string_to_int(word, line_number, input_file_name) == 0)
             {
               skip_next_line = true;
             }
