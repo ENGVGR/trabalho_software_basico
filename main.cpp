@@ -26,7 +26,14 @@ void send_error(int line_number, string error_message, string file_name)
   exit(1);
 }
 
-bool validate_number(string word, int line_number, string file_name)
+void send_symbol_error(string error_message)
+{
+  cerr << "Foi encontrado um erro na tabela de simbolos: " << endl;
+  cerr << error_message << endl;
+  exit(1);
+}
+
+bool validate_number(string word, int line_number, string file_name, bool send_error_if_false=true)
 {
   if (word[0] == '0' && word[1] == 'x')
   {
@@ -35,7 +42,9 @@ bool validate_number(string word, int line_number, string file_name)
     {
       if (not(c >= '0' && c <= '9' || c >= 'A' && c <= 'F'))
       {
-        send_error(line_number, "'" + word + "' nao e um hexadecimal valido.", file_name);
+        if (send_error_if_false){
+          send_error(line_number, "'" + word + "' nao e um hexadecimal valido.", file_name);
+        }
         return false;
       }
     }
@@ -44,7 +53,10 @@ bool validate_number(string word, int line_number, string file_name)
 
     if (unconverted_characters != word.substr(2).length())
     {
-      send_error(line_number, "'" + word + "' nao e um hexadecimal valido.", file_name);
+      if (send_error_if_false){
+        send_error(line_number, "'" + word + "' nao e um hexadecimal valido.", file_name);
+      }
+      return false;
     }
   }
   else if (word[0] == '-')
@@ -54,7 +66,9 @@ bool validate_number(string word, int line_number, string file_name)
     {
       if (not(c >= '0' && c <= '9'))
       {
-        send_error(line_number, "'" + word + "' nao e um numero valido.", file_name);
+        if (send_error_if_false){
+          send_error(line_number, "'" + word + "' nao e um numero valido.", file_name);
+        }
         return false;
       }
     }
@@ -65,7 +79,9 @@ bool validate_number(string word, int line_number, string file_name)
     {
       if (not(c >= '0' && c <= '9'))
       {
-        send_error(line_number, "'" + word + "' nao e um numero valido.", file_name);
+        if (send_error_if_false){
+          send_error(line_number, "'" + word + "' nao e um numero valido.", file_name);
+        }
         return false;
       }
     }
@@ -312,7 +328,7 @@ void pre_processor(string &input_file_name, string output_file_name)
   output_file.close();
 }
 
-void assembler(string &input_file_name, string output_file_name)
+void assembler(string input_file_name, string output_file_name)
 {
   bool can_write = false;
   bool is_label = false;
@@ -328,6 +344,8 @@ void assembler(string &input_file_name, string output_file_name)
   string line_to_write = "";
 
   map<string, info_symbol_table> symbol_table;
+
+  vector<string> source_code;
 
   ofstream output_file(output_file_name);
 
@@ -350,7 +368,7 @@ void assembler(string &input_file_name, string output_file_name)
   {
     line_number++;
 
-    if (arguments_counter > 0)
+    if (arguments_counter > 0 && line_to_write.size() > 0)
     {
       send_error(line_number - 1, "Falta argumento.", input_file_name);
     }
@@ -372,10 +390,27 @@ void assembler(string &input_file_name, string output_file_name)
         break;
       }
 
-      /* cout << "Word: " << word << endl;
+      cout << "Word: " << word << endl;
       cout << "Line to write: " << line_to_write << endl;
       cout << "Numero da linha: " << line_number << endl;
-      cout << "can write e new_line: " << can_write << " " << new_line << endl; */
+      cout << "can write e new_line: " << can_write << " " << new_line << endl;
+      cout << "Source code: " << endl;
+
+      for (auto s : source_code)
+      {
+        cout << "   " << s << endl;
+      }
+
+      cout << "Symbol table: " << endl;
+
+      for (map<string, info_symbol_table>::iterator it = symbol_table.begin(); it != symbol_table.end(); ++it)
+      {
+        cout << "   Chave: " << it->first << ", Valor: " << it->second.value << " definido: " << it->second.defined << " enderecos para corrigir: " << endl;
+        for (auto s : it->second.addresses_to_correct)
+        {
+          cout << "     " << s << endl;
+        }
+      }
 
       if (can_write && new_line)
       {
@@ -383,7 +418,13 @@ void assembler(string &input_file_name, string output_file_name)
         {
           send_error(line_number--, "Falta argumento.", input_file_name);
         }
-        output_file << line_to_write << endl;
+
+        size_t end = line_to_write.find_last_not_of(" ");
+        if (end != string::npos && end + 1 < line_to_write.size()) {
+            line_to_write.erase(end + 1);
+        }
+        
+        source_code.push_back(line_to_write);
         line_to_write = "";
         can_write = false;
         new_line = false;
@@ -398,25 +439,25 @@ void assembler(string &input_file_name, string output_file_name)
 
       if (is_label)
       {
-        label_validation(word, line_number, input_file_name);
+        label_validation(word.substr(0, word.length() - 1), line_number, input_file_name);
 
         if (have_label_in_this_line)
         {
           send_error(line_number, "Rotulo dobrado na mesma linha.", input_file_name);
         }
 
-        if (symbol_table.find(word) != symbol_table.end())
+        if (symbol_table.find(word.substr(0, word.length() - 1)) != symbol_table.end())
         {
-          if (symbol_table[word].defined)
+          if (symbol_table[word.substr(0, word.length() - 1)].defined)
           {
             send_error(line_number, "Rotulo redefinido.", input_file_name);
           }
-          symbol_table[word].defined = true;
-          symbol_table[word].value = address;
+          symbol_table[word.substr(0, word.length() - 1)].defined = true;
+          symbol_table[word.substr(0, word.length() - 1)].value = address;
         }
         else
         {
-          symbol_table[word] = {true, address, {}};
+          symbol_table[word.substr(0, word.length() - 1)] = {true, address, {}};
         }
 
         have_label_in_this_line = true;
@@ -438,24 +479,31 @@ void assembler(string &input_file_name, string output_file_name)
 
         if (word == "CONST")
         {
-          line_to_write += address + " ";
+          line_to_write += to_string(address) + " ";
         }
         else
         {
-          line_to_write += address + " " + instructions[word][1];
+          line_to_write += to_string(address) + " " + instructions[word] + " ";
         }
+
+        if (word == "STOP")
+        {
+          arguments_counter--;
+        }
+
         arguments_counter--;
       }
       else if (word == "SPACE")
       {
-        line_to_write += address + " 00";
+        line_to_write += to_string(address) + " 00";
         arguments_counter -= 2;
+        has_argument = true;
       }
       else if (arguments_counter > 0 && line_to_write.size() > 0)
       {
-        if (validate_number(word, line_number, input_file_name))
+        if (validate_number(word, line_number, input_file_name,false))
         {
-          line_to_write += word;
+          line_to_write += word + " ";
         }
         else
         {
@@ -463,18 +511,18 @@ void assembler(string &input_file_name, string output_file_name)
           {
             if (symbol_table[word].defined)
             {
-              /* Inserir na linha o valor */
+              line_to_write += symbol_table[word].value + " ";
             }
             else
             {
               symbol_table[word].addresses_to_correct.push_back(address);
-              /* inserir um valor default na linha */
+              line_to_write += "-1 ";
             }
           }
           else
           {
-            symbol_table[word] = {false, 0, {address}};
-            /* inserir um valor default na linha */
+            symbol_table[word] = {false, -1, {address}};
+            line_to_write += "-1 ";
           }
         }
         has_argument = true;
@@ -502,8 +550,56 @@ void assembler(string &input_file_name, string output_file_name)
   }
   if (line_to_write.size() > 0)
   {
-    output_file << line_to_write << endl;
+    /* ATENÇÃO: antes de inserir a ultima linha, verificar se ela é valida */
+    source_code.push_back(line_to_write);
   }
+
+  for (map<string, info_symbol_table>::iterator it = symbol_table.begin(); it != symbol_table.end(); ++it)
+  {
+    if (it->second.defined)
+    {
+      for (int s : it->second.addresses_to_correct)
+      {
+        int contagem = 0;
+
+        for (int i = 0; i < source_code.size(); i++)
+        {
+          string line = source_code[i];
+
+          istringstream stream(line);
+          string word_source_file;
+
+          contagem--;
+        
+          while (stream >> word_source_file)
+          {
+            contagem++;
+          }
+
+          if (contagem >= s){
+            size_t position_last_space = line.find_last_of(" ");
+
+            if (position_last_space != string::npos)
+            {
+              string last_word = line.substr(position_last_space + 1);
+              source_code[i] = line.substr(0, position_last_space + 1) + to_string(it->second.value);
+            }
+            break;
+          }
+        }
+      }
+    }
+    else
+    {
+      send_symbol_error("Simbolo nao definido: " + it->first);
+    }
+  }
+
+  for (string s : source_code)
+  {
+    output_file << s << endl;
+  }
+
   input_file.close();
   output_file.close();
 }
@@ -566,10 +662,12 @@ int main(int argc, char *argv[])
   }
   else
   {
+    output_file_name = "myfile.pre";
+    pre_processor(argument_3, output_file_name);
+    
     output_file_name = "myfile.obj";
-    assembler(argument_3, output_file_name);
+    assembler("myfile.pre", output_file_name);
   }
 
   return 0;
 }
-
