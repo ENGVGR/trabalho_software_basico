@@ -412,6 +412,7 @@ void assembler(string input_file_name, string output_file_name)
         }
       }
 
+      /* Inserir uma nova linha */
       if (can_write && new_line)
       {
         if (!has_argument)
@@ -432,6 +433,7 @@ void assembler(string input_file_name, string output_file_name)
         has_argument = false;
       }
 
+      /* Verificar se é label] */
       if (word[word.length() - 1] == ':')
       {
         is_label = true;
@@ -542,18 +544,21 @@ void assembler(string input_file_name, string output_file_name)
         send_error(line_number, "Numero de argumentos incorreto.", input_file_name);
       }
 
+      /* Se não for label, soma o endereço */
       if (word[word.length() - 1] != ':')
       {
         address++;
       }
     }
   }
+
   if (line_to_write.size() > 0)
   {
     /* ATENÇÃO: antes de inserir a ultima linha, verificar se ela é valida */
     source_code.push_back(line_to_write);
   }
 
+  /* Corrigir simbolos indefinidos */
   for (map<string, info_symbol_table>::iterator it = symbol_table.begin(); it != symbol_table.end(); ++it)
   {
     if (it->second.defined)
@@ -597,7 +602,7 @@ void assembler(string input_file_name, string output_file_name)
 
   for (string s : source_code)
   {
-    output_file << s << endl;
+    output_file << s << " ";
   }
 
   input_file.close();
@@ -664,10 +669,15 @@ int main(int argc, char *argv[])
   {
     output_file_name = "myfile.pre";
     pre_processor(argument_3, output_file_name);
-    
+
     output_file_name = "myfile.obj";
     assembler("myfile.pre", output_file_name);
   }
 
   return 0;
 }
+
+/* Tirar o endereço
+    Gerar tabela de usos e definição
+    verificar se é begin e end 
+    Gerar a tabela de relativos */
