@@ -33,7 +33,7 @@ void send_symbol_error(string error_message)
   exit(1);
 }
 
-bool validate_number(string word, int line_number, string file_name, bool send_error_if_false=true)
+bool validate_number(string word, int line_number, string file_name, bool send_error_if_false = true)
 {
   if (word[0] == '0' && word[1] == 'x')
   {
@@ -42,7 +42,8 @@ bool validate_number(string word, int line_number, string file_name, bool send_e
     {
       if (not(c >= '0' && c <= '9' || c >= 'A' && c <= 'F'))
       {
-        if (send_error_if_false){
+        if (send_error_if_false)
+        {
           send_error(line_number, "'" + word + "' nao e um hexadecimal valido.", file_name);
         }
         return false;
@@ -53,7 +54,8 @@ bool validate_number(string word, int line_number, string file_name, bool send_e
 
     if (unconverted_characters != word.substr(2).length())
     {
-      if (send_error_if_false){
+      if (send_error_if_false)
+      {
         send_error(line_number, "'" + word + "' nao e um hexadecimal valido.", file_name);
       }
       return false;
@@ -66,7 +68,8 @@ bool validate_number(string word, int line_number, string file_name, bool send_e
     {
       if (not(c >= '0' && c <= '9'))
       {
-        if (send_error_if_false){
+        if (send_error_if_false)
+        {
           send_error(line_number, "'" + word + "' nao e um numero valido.", file_name);
         }
         return false;
@@ -79,7 +82,8 @@ bool validate_number(string word, int line_number, string file_name, bool send_e
     {
       if (not(c >= '0' && c <= '9'))
       {
-        if (send_error_if_false){
+        if (send_error_if_false)
+        {
           send_error(line_number, "'" + word + "' nao e um numero valido.", file_name);
         }
         return false;
@@ -117,7 +121,7 @@ void label_validation(string label, int line_number, string file_name)
 
   for (char l : label)
   {
-    if (!((l >= 'a' && l <= 'z') || (l >= 'A' && l <= 'Z') || (l >= '0' && l <= '9') || (l == '-')))
+    if (!((l >= 'a' && l <= 'z') || (l >= 'A' && l <= 'Z') || (l >= '0' && l <= '9') || (l == '_')))
     {
       send_error(line_number, "Rotulo com caracter invalido.", file_name);
     }
@@ -134,12 +138,15 @@ void pre_processor(string &input_file_name, string output_file_name)
   bool is_copy = false;
   bool is_if = false;
   bool skip_next_line = false;
-  int line_number = 0;
   bool new_line = false;
+
+  int line_number = 0;
   int next_line = 0;
+
   string label;
   string line_to_read = "";
   string line_to_write = "";
+
   map<string, string> dictionary;
 
   ofstream output_file(output_file_name);
@@ -162,14 +169,17 @@ void pre_processor(string &input_file_name, string output_file_name)
   while (getline(input_file, line_to_read))
   {
     line_number++;
+
     if (line_to_write.size() != 0)
     {
       new_line = true;
     }
+
     if (next_line != line_number)
     {
       skip_next_line = false;
     }
+
     istringstream line_readed(line_to_read);
 
     string word;
@@ -263,17 +273,47 @@ void pre_processor(string &input_file_name, string output_file_name)
         }
         else if (has_argument)
         {
-          line_to_write += word + " ";
+          if (dictionary.find(word) != dictionary.end())
+          {
+            line_to_write += dictionary[word] + " ";
+          }
+          else
+          {
+            line_to_write += word + " ";
+          }
+
           has_argument = false;
           can_write = true;
         }
         else if (is_copy)
         {
-          size_t indice_da_virgula = word.find(',');
+          size_t comma_pos = word.find(',');
 
-          if (indice_da_virgula != std::string::npos && indice_da_virgula + 1 < word.length() && indice_da_virgula > 0)
+          if (comma_pos != string::npos && comma_pos + 1 < word.length() && comma_pos > 0)
           {
-            line_to_write += word + " ";
+            string before_comma;
+            string after_comma;
+
+            before_comma = word.substr(0, comma_pos);
+            after_comma = word.substr(comma_pos + 1);
+
+            if (dictionary.find(before_comma) != dictionary.end())
+            {
+              line_to_write += dictionary[before_comma] + ",";
+            }
+            else
+            {
+              line_to_write += before_comma + ",";
+            }
+
+            if (dictionary.find(after_comma) != dictionary.end())
+            {
+              line_to_write += dictionary[after_comma] + " ";
+            }
+            else
+            {
+              line_to_write += after_comma + " ";
+            }
             can_write = true;
             is_copy = false;
           }
@@ -312,8 +352,14 @@ void pre_processor(string &input_file_name, string output_file_name)
         {
           is_if = true;
         }
+        else if (word == "BEGIN" || word == "END")
+        {
+          line_to_write += word + " ";
+          can_write = true;
+        }
         else
         {
+
           line_to_write += word + " ";
           has_argument = true;
         }
@@ -334,6 +380,10 @@ void assembler(string input_file_name, string output_file_name)
   bool is_label = false;
   bool has_argument = false;
   bool have_label_in_this_line = false;
+  bool have_begin_end = false;
+  bool last_was_begin_or_and = false;
+  bool last_was_const = false;
+  bool last_was_copy = false;
 
   int new_line = 0;
   int line_number = 0;
@@ -379,6 +429,16 @@ void assembler(string input_file_name, string output_file_name)
       have_label_in_this_line = false;
     }
 
+    if (last_was_begin_or_and)
+    {
+      line_to_write.clear();
+      can_write = false;
+      new_line = false;
+      arguments_counter = 2;
+      has_argument = false;
+      last_was_begin_or_and = false;
+    }
+
     istringstream line_readed(line_to_read);
 
     string word;
@@ -421,12 +481,13 @@ void assembler(string input_file_name, string output_file_name)
         }
 
         size_t end = line_to_write.find_last_not_of(" ");
-        if (end != string::npos && end + 1 < line_to_write.size()) {
-            line_to_write.erase(end + 1);
+        if (end != string::npos && end + 1 < line_to_write.size())
+        {
+          line_to_write.erase(end + 1);
         }
-        
+
         source_code.push_back(line_to_write);
-        line_to_write = "";
+        line_to_write.clear();
         can_write = false;
         new_line = false;
         arguments_counter = 2;
@@ -479,33 +540,120 @@ void assembler(string input_file_name, string output_file_name)
           }
         }
 
-        if (word == "CONST")
+        if (word == "COPY")
         {
-          line_to_write += to_string(address) + " ";
+          last_was_copy = true;
+        }
+
+        if (word != "CONST")
+        {
+          line_to_write += instructions[word] + " ";
         }
         else
         {
-          line_to_write += to_string(address) + " " + instructions[word] + " ";
-        }
-
-        if (word == "STOP")
-        {
-          arguments_counter--;
+          last_was_const = true;
         }
 
         arguments_counter--;
+
+        if (word == "STOP")
+        {
+          arguments_counter = 0;
+          has_argument = true;
+        }
       }
       else if (word == "SPACE")
       {
-        line_to_write += to_string(address) + " 00";
+        line_to_write += "00 ";
         arguments_counter -= 2;
         has_argument = true;
       }
-      else if (arguments_counter > 0 && line_to_write.size() > 0)
+      else if (word == "BEGIN" || word == "END")
       {
-        if (validate_number(word, line_number, input_file_name,false))
+        line_to_write.clear();
+        arguments_counter = 0;
+        has_argument = false;
+        last_was_begin_or_and = true;
+        have_begin_end = true;
+      }
+      else if (last_was_copy)
+      {
+        string before_comma;
+        string after_comma;
+
+        size_t comma_pos = word.find(',');
+
+        if (comma_pos != string::npos)
         {
-          line_to_write += word + " ";
+          before_comma = word.substr(0, comma_pos);
+          after_comma = word.substr(comma_pos + 1);
+        }
+        else
+        {
+          send_error(line_number, "Argumentos do copy em formato incorreto.", input_file_name);
+        }
+
+        if (validate_number(before_comma, line_number, input_file_name, false))
+        {
+          line_to_write += to_string(convert_string_to_int(before_comma, line_number, input_file_name)) + " ";
+        }
+        else
+        {
+          if (symbol_table.find(before_comma) != symbol_table.end())
+          {
+            if (symbol_table[before_comma].defined)
+            {
+              line_to_write += symbol_table[before_comma].value + " ";
+            }
+            else
+            {
+              symbol_table[before_comma].addresses_to_correct.push_back(address);
+              line_to_write += "-1 ";
+            }
+          }
+          else
+          {
+            symbol_table[before_comma] = {false, -1, {address}};
+            line_to_write += "-1 ";
+          }
+        }
+
+        address++;
+
+        if (validate_number(after_comma, line_number, input_file_name, false))
+        {
+          line_to_write += to_string(convert_string_to_int(after_comma, line_number, input_file_name)) + " ";
+        }
+        else
+        {
+          if (symbol_table.find(after_comma) != symbol_table.end())
+          {
+            if (symbol_table[after_comma].defined)
+            {
+              line_to_write += symbol_table[after_comma].value + " ";
+            }
+            else
+            {
+              symbol_table[after_comma].addresses_to_correct.push_back(address);
+              line_to_write += "-1 ";
+            }
+          }
+          else
+          {
+            symbol_table[after_comma] = {false, -1, {address}};
+            line_to_write += "-1 ";
+          }
+        }
+
+        last_was_copy = false;
+        has_argument = true;
+        arguments_counter--;
+      }
+      else if ((arguments_counter > 0 && line_to_write.size() > 0) || last_was_const)
+      {
+        if (validate_number(word, line_number, input_file_name, false))
+        {
+          line_to_write += to_string(convert_string_to_int(word, line_number, input_file_name)) + " ";
         }
         else
         {
@@ -529,6 +677,7 @@ void assembler(string input_file_name, string output_file_name)
         }
         has_argument = true;
         arguments_counter--;
+        last_was_const = false;
       }
       else
       {
@@ -544,8 +693,10 @@ void assembler(string input_file_name, string output_file_name)
         send_error(line_number, "Numero de argumentos incorreto.", input_file_name);
       }
 
-      /* Se não for label, soma o endereço */
-      if (word[word.length() - 1] != ':')
+      cout << "Address: " << address << endl;
+
+      /* Se não for label e const e begin e end, soma o endereço */
+      if (word[word.length() - 1] != ':' && word != "CONST" && word != "BEGIN" && word != "END")
       {
         address++;
       }
@@ -554,18 +705,37 @@ void assembler(string input_file_name, string output_file_name)
 
   if (line_to_write.size() > 0)
   {
-    /* ATENÇÃO: antes de inserir a ultima linha, verificar se ela é valida */
-    source_code.push_back(line_to_write);
+    if (arguments_counter > 0 && line_to_write.size() > 0)
+    {
+      send_error(line_number, "Falta argumento.", input_file_name);
+    }
+
+    if (can_write)
+    {
+      if (!has_argument)
+      {
+        send_error(line_number, "Falta argumento.", input_file_name);
+      }
+
+      source_code.push_back(line_to_write);
+    }
+    else
+    {
+      send_error(line_number, "Falta argumento.", input_file_name);
+    }
   }
 
   /* Corrigir simbolos indefinidos */
   for (map<string, info_symbol_table>::iterator it = symbol_table.begin(); it != symbol_table.end(); ++it)
   {
+
+    cout << it->first << endl;
+
     if (it->second.defined)
     {
       for (int s : it->second.addresses_to_correct)
       {
-        int contagem = 0;
+        int contagem = -1;
 
         for (int i = 0; i < source_code.size(); i++)
         {
@@ -574,20 +744,29 @@ void assembler(string input_file_name, string output_file_name)
           istringstream stream(line);
           string word_source_file;
 
-          contagem--;
-        
           while (stream >> word_source_file)
           {
             contagem++;
           }
 
-          if (contagem >= s){
+          if (contagem == s)
+          {
             size_t position_last_space = line.find_last_of(" ");
 
             if (position_last_space != string::npos)
             {
-              string last_word = line.substr(position_last_space + 1);
               source_code[i] = line.substr(0, position_last_space + 1) + to_string(it->second.value);
+            }
+            break;
+          }
+          else if (contagem > s) /* Caso seja copy */
+          {
+            size_t position_last_space = line.find_last_of(" ");
+            size_t position_first_space = line.find_first_of(" ");
+
+            if (position_last_space != string::npos)
+            {
+              source_code[i] = line.substr(0, position_first_space + 1) + to_string(it->second.value) + line.substr(position_last_space);
             }
             break;
           }
@@ -638,25 +817,15 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  if (argument_3.substr(argument_3.length() - 4) == ".asm")
-  {
-    if (argument_2 == "-o")
-    {
-      cerr << "Argumento '" + argument_2 + "' incorreto para arquivo com final '" + argument_3.substr(argument_3.length() - 4) << endl;
-      return 1;
-    }
-  }
-  else if (argument_3.substr(argument_3.length() - 4) == ".pre")
-  {
-    if (argument_2 == "-p")
-    {
-      cerr << "Argumento '" + argument_2 + "' incorreto para arquivo com final '" + argument_3.substr(argument_3.length() - 4) << endl;
-      return 1;
-    }
-  }
-  else
+  if (argument_3.substr(argument_3.length() - 4) != ".asm")
   {
     cerr << "Arquivo '" + argument_3 + "' nao e aceito." << endl;
+    return 1;
+  }
+
+  if (argument_2 != "-o" && argument_2 != "-p")
+  {
+    cerr << "Argumento '" + argument_2 + "' nao aceito. '" + argument_3.substr(argument_3.length() - 4) << endl;
     return 1;
   }
 
@@ -677,7 +846,8 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-/* Tirar o endereço
-    Gerar tabela de usos e definição
-    verificar se é begin e end 
-    Gerar a tabela de relativos */
+/* A fazer:
+  - Gerar tabela de usos e definição
+  - Gerar a tabela de relativos
+  - Diferenciar quando temm begin ou não
+  - Testar */
