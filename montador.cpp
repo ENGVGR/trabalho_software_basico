@@ -14,6 +14,7 @@ struct info_symbol_table
   bool defined;
   int value;
   vector<int> addresses_to_correct;
+  bool is_extern=false;
 };
 
 map<string, string> instructions = {{"ADD", "01"}, {"SUB", "02"}, {"MUL", "03"}, {"DIV", "04"}, {"JMP", "05"}, {"JMPN", "06"}, {"JMPP", "07"}, {"JMPZ", "08"}, {"COPY", "09"}, {"LOAD", "10"}, {"STORE", "11"}, {"INPUT", "12"}, {"OUTPUT", "13"}, {"STOP", "14"}};
@@ -149,6 +150,8 @@ void pre_processor(string &input_file_name, string output_file_name)
 
   map<string, string> dictionary;
 
+  map<string, int> labels;
+
   ofstream output_file(output_file_name);
 
   if (!output_file.is_open())
@@ -196,11 +199,6 @@ void pre_processor(string &input_file_name, string output_file_name)
         break;
       }
 
-      /* cout << "Word: " << word << endl;
-      cout << "Line to write: " << line_to_write << endl;
-      cout << "Numero da linha: " << line_number << endl;
-      cout << "can write e new_line: " << can_write << " " << new_line << endl; */
-
       if (can_write && new_line)
       {
         output_file << line_to_write << endl;
@@ -216,7 +214,7 @@ void pre_processor(string &input_file_name, string output_file_name)
       }
 
       /* Transformar tudo para maiusculo */
-      if (!is_constant && !is_label && !is_if)
+      if (!is_constant && !is_label && !is_if && labels.find(word) == labels.end())
       {
         for (char &c : word)
         {
@@ -269,6 +267,7 @@ void pre_processor(string &input_file_name, string output_file_name)
         {
           line_to_write += word + " ";
           label = word;
+          labels[word.substr(0, word.length() - 1)] = 0;
           is_label = false;
         }
         else if (has_argument)
@@ -352,7 +351,7 @@ void pre_processor(string &input_file_name, string output_file_name)
         {
           is_if = true;
         }
-        else if (word == "BEGIN" || word == "END")
+        else if (word == "BEGIN" || word == "END" || word == "EXTERN" || word == "PUBLIC")
         {
           line_to_write += word + " ";
           can_write = true;
@@ -370,6 +369,7 @@ void pre_processor(string &input_file_name, string output_file_name)
   {
     output_file << line_to_write << endl;
   }
+  
   input_file.close();
   output_file.close();
 }
@@ -384,6 +384,9 @@ void assembler(string input_file_name, string output_file_name)
   bool last_was_begin_or_and = false;
   bool last_was_const = false;
   bool last_was_copy = false;
+  bool last_was_extern = false;
+  bool last_was_public = false;
+  bool cant_sum_address = false;
 
   int new_line = 0;
   int line_number = 0;
@@ -392,8 +395,11 @@ void assembler(string input_file_name, string output_file_name)
 
   string line_to_read = "";
   string line_to_write = "";
+  string last_label = "";
 
   map<string, info_symbol_table> symbol_table;
+  vector<pair<string, int>> uses_table;
+  vector<string> definition_table;
 
   vector<string> source_code;
 
@@ -420,12 +426,17 @@ void assembler(string input_file_name, string output_file_name)
 
     if (arguments_counter > 0 && line_to_write.size() > 0)
     {
-      send_error(line_number - 1, "Falta argumento.", input_file_name);
+      send_error(line_number--, "Falta argumento.", input_file_name);
     }
 
     if (line_to_write.size() != 0)
     {
       new_line = true;
+      have_label_in_this_line = false;
+    }
+
+    if (last_was_extern){
+      last_was_extern = false;
       have_label_in_this_line = false;
     }
 
@@ -437,6 +448,7 @@ void assembler(string input_file_name, string output_file_name)
       arguments_counter = 2;
       has_argument = false;
       last_was_begin_or_and = false;
+      have_label_in_this_line = false;
     }
 
     istringstream line_readed(line_to_read);
@@ -525,6 +537,7 @@ void assembler(string input_file_name, string output_file_name)
 
         have_label_in_this_line = true;
         is_label = false;
+        last_label = word.substr(0, word.length() - 1);
       }
       else if (instructions.find(word) != instructions.end() || word == "CONST")
       {
@@ -608,13 +621,13 @@ void assembler(string input_file_name, string output_file_name)
             else
             {
               symbol_table[before_comma].addresses_to_correct.push_back(address);
-              line_to_write += "-1 ";
+              line_to_write += "0 ";
             }
           }
           else
           {
             symbol_table[before_comma] = {false, -1, {address}};
-            line_to_write += "-1 ";
+            line_to_write += "0 ";
           }
         }
 
@@ -635,13 +648,13 @@ void assembler(string input_file_name, string output_file_name)
             else
             {
               symbol_table[after_comma].addresses_to_correct.push_back(address);
-              line_to_write += "-1 ";
+              line_to_write += "0 ";
             }
           }
           else
           {
             symbol_table[after_comma] = {false, -1, {address}};
-            line_to_write += "-1 ";
+            line_to_write += "0 ";
           }
         }
 
@@ -659,25 +672,51 @@ void assembler(string input_file_name, string output_file_name)
         {
           if (symbol_table.find(word) != symbol_table.end())
           {
-            if (symbol_table[word].defined)
+            if (symbol_table[word].is_extern)
             {
-              line_to_write += symbol_table[word].value + " ";
+              line_to_write += "00 ";
             }
-            else
+            else 
             {
-              symbol_table[word].addresses_to_correct.push_back(address);
-              line_to_write += "-1 ";
+              if (symbol_table[word].defined)
+              {
+                line_to_write += symbol_table[word].value + " ";
+              }
+              else
+              {
+                symbol_table[word].addresses_to_correct.push_back(address);
+                line_to_write += "0 ";
+              }
             }
           }
           else
           {
             symbol_table[word] = {false, -1, {address}};
-            line_to_write += "-1 ";
+            line_to_write += "0 ";
           }
         }
         has_argument = true;
         arguments_counter--;
         last_was_const = false;
+      }
+      else if (word == "EXTERN")
+      {
+        symbol_table[last_label].is_extern = true;
+
+        last_was_extern = true;
+        line_to_write.clear();
+      }
+      else if (word == "PUBLIC")
+      {
+        last_was_public = true;
+        line_to_write.clear();
+      }
+      else if (last_was_public)
+      {
+        definition_table.push_back(word);
+        last_was_public = false;
+        cant_sum_address = true;
+        line_to_write.clear();
       }
       else
       {
@@ -693,16 +732,24 @@ void assembler(string input_file_name, string output_file_name)
         send_error(line_number, "Numero de argumentos incorreto.", input_file_name);
       }
 
-      cout << "Address: " << address << endl;
+      if (symbol_table.find(word) != symbol_table.end() && symbol_table[word].is_extern)
+      {
+        uses_table.push_back(make_pair(word, address));
+      }
 
       /* Se não for label e const e begin e end, soma o endereço */
-      if (word[word.length() - 1] != ':' && word != "CONST" && word != "BEGIN" && word != "END")
+      if (word[word.length() - 1] != ':' && word != "CONST" && word != "BEGIN" && word != "END" && word != "EXTERN" && word != "PUBLIC" && !cant_sum_address)
       {
         address++;
+      }
+
+      if (cant_sum_address){
+        cant_sum_address = false;
       }
     }
   }
 
+  /* Escrever a última linha */
   if (line_to_write.size() > 0)
   {
     if (arguments_counter > 0 && line_to_write.size() > 0)
@@ -779,6 +826,36 @@ void assembler(string input_file_name, string output_file_name)
     }
   }
 
+
+  if (have_begin_end){
+    /* Escrever tabela de usos */
+    output_file << "USO" << endl;
+
+    for (int i = 0; i < uses_table.size(); i++)
+    {
+      output_file << uses_table[i].first << " " << uses_table[i].second << endl;
+    }
+
+    /* Escrever tabela de diretivas */
+    output_file << "DEF" << endl;
+
+    for (int i = 0; i < definition_table.size(); i++)
+    {
+      if (symbol_table.find(definition_table[i]) != symbol_table.end() && symbol_table[definition_table[i]].defined)
+      {
+      output_file << definition_table[i] << " " << symbol_table[definition_table[i]].value << endl;
+      }
+      else 
+      {
+        send_symbol_error(definition_table[i] + " nao esta definido.");
+      }
+    }
+    
+  }
+
+  output_file << endl;
+
+  /* Escrever código fonte */
   for (string s : source_code)
   {
     output_file << s << " ";
@@ -847,7 +924,4 @@ int main(int argc, char *argv[])
 }
 
 /* A fazer:
-  - Gerar tabela de usos e definição
-  - Gerar a tabela de relativos
-  - Diferenciar quando temm begin ou não
   - Testar */
