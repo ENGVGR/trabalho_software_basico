@@ -41,7 +41,7 @@ bool validate_number(string word, int line_number, string file_name, bool send_e
     string substr = word.substr(2);
     for (char &c : substr)
     {
-      if (not(c >= '0' && c <= '9' || c >= 'A' && c <= 'F'))
+      if (!(c >= '0' && c <= '9' || c >= 'A' && c <= 'F'))
       {
         if (send_error_if_false)
         {
@@ -67,7 +67,7 @@ bool validate_number(string word, int line_number, string file_name, bool send_e
     string substr = word.substr(1, word.length());
     for (char &c : substr)
     {
-      if (not(c >= '0' && c <= '9'))
+      if (!(c >= '0' && c <= '9'))
       {
         if (send_error_if_false)
         {
@@ -81,7 +81,7 @@ bool validate_number(string word, int line_number, string file_name, bool send_e
   {
     for (char &c : word)
     {
-      if (not(c >= '0' && c <= '9'))
+      if (!(c >= '0' && c <= '9'))
       {
         if (send_error_if_false)
         {
@@ -214,13 +214,10 @@ void pre_processor(string &input_file_name, string output_file_name)
       }
 
       /* Transformar tudo para maiusculo */
-      if (!is_constant && !is_label && !is_if && labels.find(word) == labels.end())
-      {
-        for (char &c : word)
-        {
-          c = toupper(static_cast<unsigned char>(c));
-        }
+      for (char &c : word){
+        c = toupper(static_cast<unsigned char>(c));
       }
+      
 
       if (is_equ)
       {
