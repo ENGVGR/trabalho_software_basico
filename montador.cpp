@@ -396,6 +396,7 @@ void assembler(string input_file_name, string output_file_name)
   string line_to_read = "";
   string line_to_write = "";
   string last_label = "";
+  string real = "";
 
   map<string, info_symbol_table> symbol_table;
   vector<pair<string, int>> uses_table;
@@ -556,11 +557,18 @@ void assembler(string input_file_name, string output_file_name)
         if (word == "COPY")
         {
           last_was_copy = true;
+          line_to_write += instructions[word] + " ";
+          real += "011";
         }
-
-        if (word != "CONST")
+        else if (word == "STOP")
         {
           line_to_write += instructions[word] + " ";
+          real += "0";
+        }
+        else if (word != "CONST")
+        {
+          line_to_write += instructions[word] + " ";
+          real += "01";
         }
         else
         {
@@ -580,6 +588,7 @@ void assembler(string input_file_name, string output_file_name)
         line_to_write += "00 ";
         arguments_counter -= 2;
         has_argument = true;
+        real += "0";
       }
       else if (word == "BEGIN" || word == "END")
       {
@@ -850,7 +859,12 @@ void assembler(string input_file_name, string output_file_name)
         send_symbol_error(definition_table[i] + " nao esta definido.");
       }
     }
-    
+
+    output_file << endl;
+
+    /* Escrever tabela de diretivas */
+    output_file << "REAL" << endl;
+    output_file << real << endl;
   }
 
   output_file << endl;
