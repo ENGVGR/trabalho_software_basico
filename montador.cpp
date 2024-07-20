@@ -570,6 +570,7 @@ void assembler(string input_file_name, string output_file_name)
         else
         {
           last_was_const = true;
+          real += "0";
         }
 
         arguments_counter--;
