@@ -920,16 +920,16 @@ int main(int argc, char *argv[])
 
   if (argument_2 == "-p")
   {
-    output_file_name = "myfile.pre";
+    output_file_name = argument_3.substr(0, argument_3.length() - 4) + ".pre";
     pre_processor(argument_3, output_file_name);
   }
   else
   {
-    output_file_name = "myfile.pre";
+    output_file_name = argument_3.substr(0, argument_3.length() - 4) + ".pre";
     pre_processor(argument_3, output_file_name);
 
-    output_file_name = "myfile.obj";
-    assembler("myfile.pre", output_file_name);
+  output_file_name = argument_3.substr(0, argument_3.length() - 4) + ".obj";
+    assembler(argument_3.substr(0, argument_3.length() - 4) + ".pre", output_file_name);
   }
 
   return 0;
