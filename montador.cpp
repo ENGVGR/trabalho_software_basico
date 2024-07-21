@@ -14,7 +14,7 @@ struct info_symbol_table
   bool defined;
   int value;
   vector<int> addresses_to_correct;
-  bool is_extern=false;
+  bool is_extern = false;
 };
 
 map<string, string> instructions = {{"ADD", "01"}, {"SUB", "02"}, {"MUL", "03"}, {"DIV", "04"}, {"JMP", "05"}, {"JMPN", "06"}, {"JMPP", "07"}, {"JMPZ", "08"}, {"COPY", "09"}, {"LOAD", "10"}, {"STORE", "11"}, {"INPUT", "12"}, {"OUTPUT", "13"}, {"STOP", "14"}};
@@ -200,9 +200,9 @@ void pre_processor(string &input_file_name, string output_file_name)
       }
 
       if (line_to_write.size() != 0)
-    {
-      new_line = true;
-    }
+      {
+        new_line = true;
+      }
 
       if (can_write && new_line)
       {
@@ -219,10 +219,10 @@ void pre_processor(string &input_file_name, string output_file_name)
       }
 
       /* Transformar tudo para maiusculo */
-      for (char &c : word){
+      for (char &c : word)
+      {
         c = toupper(static_cast<unsigned char>(c));
       }
-      
 
       if (is_equ)
       {
@@ -375,7 +375,7 @@ void pre_processor(string &input_file_name, string output_file_name)
   {
     output_file << line_to_write << endl;
   }
-  
+
   input_file.close();
   output_file.close();
 }
@@ -443,7 +443,8 @@ void assembler(string input_file_name, string output_file_name)
       have_label_in_this_line = false;
     }
 
-    if (last_was_extern){
+    if (last_was_extern)
+    {
       last_was_extern = false;
       have_label_in_this_line = false;
     }
@@ -472,7 +473,8 @@ void assembler(string input_file_name, string output_file_name)
         break;
       }
 
-      cout << endl << "-----------------------------" << endl;
+      cout << endl
+           << "-----------------------------" << endl;
 
       cout << "Word: " << word << endl;
       cout << "Line to write: " << line_to_write << endl;
@@ -480,7 +482,6 @@ void assembler(string input_file_name, string output_file_name)
       cout << "can write e new_line: " << can_write << " " << new_line << endl;
       cout << "Source code: " << endl;
       cout << "Address: " << address << endl;
-
 
       for (auto s : source_code)
       {
@@ -639,20 +640,26 @@ void assembler(string input_file_name, string output_file_name)
         {
           if (symbol_table.find(before_comma) != symbol_table.end())
           {
-            if (symbol_table[before_comma].defined)
+            if (symbol_table[before_comma].defined && !symbol_table[before_comma].is_extern)
             {
-              line_to_write += symbol_table[before_comma].value + " ";
+              line_to_write += to_string(symbol_table[before_comma].value) + " ";
+            }
+            else if (symbol_table[before_comma].is_extern)
+            {
+              uses_table.push_back(make_pair(before_comma, address));
+              symbol_table[before_comma].addresses_to_correct.push_back(address);
+              line_to_write += "00 ";
             }
             else
             {
               symbol_table[before_comma].addresses_to_correct.push_back(address);
-              line_to_write += "0 ";
+              line_to_write += "00 ";
             }
           }
           else
           {
             symbol_table[before_comma] = {false, -1, {address}};
-            line_to_write += "0 ";
+            line_to_write += "00 ";
           }
         }
 
@@ -666,20 +673,26 @@ void assembler(string input_file_name, string output_file_name)
         {
           if (symbol_table.find(after_comma) != symbol_table.end())
           {
-            if (symbol_table[after_comma].defined)
+            if (symbol_table[after_comma].defined && !symbol_table[before_comma].is_extern)
             {
-              line_to_write += symbol_table[after_comma].value + " ";
+              line_to_write += to_string(symbol_table[after_comma].value) + " ";
+            }
+            else if (symbol_table[after_comma].is_extern)
+            {
+              uses_table.push_back(make_pair(after_comma, address));
+              symbol_table[after_comma].addresses_to_correct.push_back(address);
+              line_to_write += "00 ";
             }
             else
             {
               symbol_table[after_comma].addresses_to_correct.push_back(address);
-              line_to_write += "0 ";
+              line_to_write += "00 ";
             }
           }
           else
           {
             symbol_table[after_comma] = {false, -1, {address}};
-            line_to_write += "0 ";
+            line_to_write += "00 ";
           }
         }
 
@@ -701,7 +714,7 @@ void assembler(string input_file_name, string output_file_name)
             {
               line_to_write += "00 ";
             }
-            else 
+            else
             {
               if (symbol_table[word].defined)
               {
@@ -768,7 +781,8 @@ void assembler(string input_file_name, string output_file_name)
         address++;
       }
 
-      if (cant_sum_address){
+      if (cant_sum_address)
+      {
         cant_sum_address = false;
       }
     }
@@ -851,8 +865,8 @@ void assembler(string input_file_name, string output_file_name)
     }
   }
 
-
-  if (have_begin_end){
+  if (have_begin_end)
+  {
     /* Escrever tabela de usos */
     output_file << "USO" << endl;
 
@@ -868,9 +882,9 @@ void assembler(string input_file_name, string output_file_name)
     {
       if (symbol_table.find(definition_table[i]) != symbol_table.end() && symbol_table[definition_table[i]].defined)
       {
-      output_file << definition_table[i] << " " << symbol_table[definition_table[i]].value << endl;
+        output_file << definition_table[i] << " " << symbol_table[definition_table[i]].value << endl;
       }
-      else 
+      else
       {
         send_symbol_error(definition_table[i] + " nao esta definido.");
       }
@@ -946,7 +960,7 @@ int main(int argc, char *argv[])
     output_file_name = argument_3.substr(0, argument_3.length() - 4) + ".pre";
     pre_processor(argument_3, output_file_name);
 
-  output_file_name = argument_3.substr(0, argument_3.length() - 4) + ".obj";
+    output_file_name = argument_3.substr(0, argument_3.length() - 4) + ".obj";
     assembler(argument_3.substr(0, argument_3.length() - 4) + ".pre", output_file_name);
   }
 

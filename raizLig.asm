@@ -5,7 +5,7 @@ copy zero,temp
 input final
 
 IF flag
-teste: add puta
+teste: add p
 load final
 jmpz raiz
 inic: load temp
@@ -21,6 +21,7 @@ output temp
 jmp fim
 erro: output minus
 jmp fim
+copy fim,one
 minus: const -1
 zero: const 0
 one: const 1
