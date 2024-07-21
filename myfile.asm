@@ -13,10 +13,13 @@ copy JJ,HH
 
 add teste
 
+add: sub 3
+jmpp add
+
 if JAM
 load 2
 if GM
-load 3
+h: load 3
 STOP
 
 OLD_DATA: SPACE

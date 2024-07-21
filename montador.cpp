@@ -384,6 +384,7 @@ void assembler(string input_file_name, string output_file_name)
   bool last_was_extern = false;
   bool last_was_public = false;
   bool cant_sum_address = false;
+  bool have_instruction_in_this_line = false;
 
   int new_line = 0;
   int line_number = 0;
@@ -453,6 +454,8 @@ void assembler(string input_file_name, string output_file_name)
 
     string word;
 
+    have_instruction_in_this_line = false;
+
     while (line_readed >> word)
     {
       if (word.empty())
@@ -460,11 +463,15 @@ void assembler(string input_file_name, string output_file_name)
         break;
       }
 
+      cout << endl << "-----------------------------" << endl;
+
       cout << "Word: " << word << endl;
       cout << "Line to write: " << line_to_write << endl;
       cout << "Numero da linha: " << line_number << endl;
       cout << "can write e new_line: " << can_write << " " << new_line << endl;
       cout << "Source code: " << endl;
+      cout << "Address: " << address << endl;
+
 
       for (auto s : source_code)
       {
@@ -537,7 +544,7 @@ void assembler(string input_file_name, string output_file_name)
         is_label = false;
         last_label = word.substr(0, word.length() - 1);
       }
-      else if (instructions.find(word) != instructions.end() || word == "CONST")
+      else if (!have_instruction_in_this_line && (instructions.find(word) != instructions.end() || word == "CONST"))
       {
         if (arguments_counter == 1)
         {
@@ -580,6 +587,8 @@ void assembler(string input_file_name, string output_file_name)
           arguments_counter = 0;
           has_argument = true;
         }
+
+        have_instruction_in_this_line = true;
       }
       else if (word == "SPACE")
       {
@@ -687,7 +696,7 @@ void assembler(string input_file_name, string output_file_name)
             {
               if (symbol_table[word].defined)
               {
-                line_to_write += symbol_table[word].value + " ";
+                line_to_write += to_string(symbol_table[word].value) + " ";
               }
               else
               {
