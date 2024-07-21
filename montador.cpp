@@ -199,6 +199,11 @@ void pre_processor(string &input_file_name, string output_file_name)
         break;
       }
 
+      if (line_to_write.size() != 0)
+    {
+      new_line = true;
+    }
+
       if (can_write && new_line)
       {
         output_file << line_to_write << endl;
@@ -348,14 +353,18 @@ void pre_processor(string &input_file_name, string output_file_name)
         {
           is_if = true;
         }
-        else if (word == "BEGIN" || word == "END" || word == "EXTERN" || word == "PUBLIC")
+        else if (word == "BEGIN" || word == "END" || word == "EXTERN")
         {
           line_to_write += word + " ";
           can_write = true;
         }
+        else if (word == "PUBLIC")
+        {
+          line_to_write += word + " ";
+          has_argument = true;
+        }
         else
         {
-
           line_to_write += word + " ";
           has_argument = true;
         }

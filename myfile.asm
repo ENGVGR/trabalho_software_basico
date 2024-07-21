@@ -13,8 +13,7 @@ copy JJ,HH
 
 add teste
 
-add: sub 3
-jmpp add
+add: sub 3 sub: jmpp add
 
 if JAM
 load 2
