@@ -819,42 +819,45 @@ void assembler(string input_file_name, string output_file_name)
 
     if (it->second.defined)
     {
-      for (int s : it->second.addresses_to_correct)
+      if (!it->second.is_extern)
       {
-        int contagem = -1;
-
-        for (int i = 0; i < source_code.size(); i++)
+        for (int s : it->second.addresses_to_correct)
         {
-          string line = source_code[i];
+          int contagem = -1;
 
-          istringstream stream(line);
-          string word_source_file;
-
-          while (stream >> word_source_file)
+          for (int i = 0; i < source_code.size(); i++)
           {
-            contagem++;
-          }
+            string line = source_code[i];
 
-          if (contagem == s)
-          {
-            size_t position_last_space = line.find_last_of(" ");
+            istringstream stream(line);
+            string word_source_file;
 
-            if (position_last_space != string::npos)
+            while (stream >> word_source_file)
             {
-              source_code[i] = line.substr(0, position_last_space + 1) + to_string(it->second.value);
+              contagem++;
             }
-            break;
-          }
-          else if (contagem > s) /* Caso seja copy */
-          {
-            size_t position_last_space = line.find_last_of(" ");
-            size_t position_first_space = line.find_first_of(" ");
 
-            if (position_last_space != string::npos)
+            if (contagem == s)
             {
-              source_code[i] = line.substr(0, position_first_space + 1) + to_string(it->second.value) + line.substr(position_last_space);
+              size_t position_last_space = line.find_last_of(" ");
+
+              if (position_last_space != string::npos)
+              {
+                source_code[i] = line.substr(0, position_last_space + 1) + to_string(it->second.value);
+              }
+              break;
             }
-            break;
+            else if (contagem > s) /* Caso seja copy */
+            {
+              size_t position_last_space = line.find_last_of(" ");
+              size_t position_first_space = line.find_first_of(" ");
+
+              if (position_last_space != string::npos)
+              {
+                source_code[i] = line.substr(0, position_first_space + 1) + to_string(it->second.value) + line.substr(position_last_space);
+              }
+              break;
+            }
           }
         }
       }
