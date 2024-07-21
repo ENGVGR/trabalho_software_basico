@@ -21,7 +21,7 @@ output temp
 jmp fim
 erro: output minus
 jmp fim
-copy fim,one
+copy one,fim
 minus: const -1
 zero: const 0
 one: const 1

@@ -673,7 +673,7 @@ void assembler(string input_file_name, string output_file_name)
         {
           if (symbol_table.find(after_comma) != symbol_table.end())
           {
-            if (symbol_table[after_comma].defined && !symbol_table[before_comma].is_extern)
+            if (symbol_table[after_comma].defined && !symbol_table[after_comma].is_extern)
             {
               line_to_write += to_string(symbol_table[after_comma].value) + " ";
             }
