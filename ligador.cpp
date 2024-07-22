@@ -115,8 +115,14 @@ int main(int argc, char* argv[])
     }
 
     std::ofstream objFile("output.e");
+    std::string saida;
     for(int i = 0; i < codigo.size(); i++){
-        objFile << codigo[i] << " ";
+        if(codigo[i]<=9 && codigo[i]>=0){
+            saida = "0" + std::to_string(codigo[i]);
+        } else {
+            saida = std::to_string(codigo[i]);
+        }
+        objFile << saida << " ";
     }
     objFile.close();
     return 0;
