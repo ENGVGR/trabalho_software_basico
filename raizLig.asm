@@ -1,13 +1,8 @@
-begin
+begin          ;quando ligado com o codigo end.asm ele deve dar a raiz quadrada de um numero caso for um quadrado perfeito
 flag: EQU 0
 fim: extern
-dois: extern
-add dois
-copy dois,temp
-copy temp,dois
 copy zero,temp
 input final
-
 IF flag
 teste: add varnaodef
 load final
@@ -18,11 +13,10 @@ testando: add one
 store temp
 mul temp
 sub final
-jmpn erro
-jmpp inic
-raiz: ;aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-;aaaaaaaaaaaaaaaaa       testando comentarios entre labels e instruções
-output temp
+jmpz raiz
+jmpn inic
+jmpp erro
+raiz: output temp
 jmp fim
 erro: output minus
 jmp fim
