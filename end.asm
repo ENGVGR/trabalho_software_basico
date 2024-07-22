@@ -1,4 +1,6 @@
-begin
-public fim
-fim: STOP
-end
+BEGIN 
+PUBLIC FIM 
+PUBLIC DOIS 
+DOIS: CONST 2 
+FIM: STOP 
+END 
