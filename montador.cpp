@@ -473,32 +473,6 @@ void assembler(string input_file_name, string output_file_name)
         break;
       }
 
-      cout << endl
-           << "-----------------------------" << endl;
-
-      cout << "Word: " << word << endl;
-      cout << "Line to write: " << line_to_write << endl;
-      cout << "Numero da linha: " << line_number << endl;
-      cout << "can write e new_line: " << can_write << " " << new_line << endl;
-      cout << "Source code: " << endl;
-      cout << "Address: " << address << endl;
-
-      for (auto s : source_code)
-      {
-        cout << "   " << s << endl;
-      }
-
-      cout << "Symbol table: " << endl;
-
-      for (map<string, info_symbol_table>::iterator it = symbol_table.begin(); it != symbol_table.end(); ++it)
-      {
-        cout << "   Chave: " << it->first << ", Valor: " << it->second.value << " definido: " << it->second.defined << " enderecos para corrigir: " << endl;
-        for (auto s : it->second.addresses_to_correct)
-        {
-          cout << "     " << s << endl;
-        }
-      }
-
       /* Inserir uma nova linha */
       if (can_write && new_line)
       {
@@ -815,8 +789,6 @@ void assembler(string input_file_name, string output_file_name)
   for (map<string, info_symbol_table>::iterator it = symbol_table.begin(); it != symbol_table.end(); ++it)
   {
 
-    cout << it->first << endl;
-
     if (it->second.defined)
     {
       if (!it->second.is_extern)
@@ -898,9 +870,9 @@ void assembler(string input_file_name, string output_file_name)
     /* Escrever tabela de diretivas */
     output_file << "REAL" << endl;
     output_file << real << endl;
+    output_file << endl;
   }
 
-  output_file << endl;
 
   /* Escrever código fonte */
   for (string s : source_code)
@@ -941,7 +913,7 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  if (argument_3.substr(argument_3.length() - 4) != ".asm")
+  if (argument_3.substr(argument_3.length() - 4) != ".asm" && argument_3.substr(argument_3.length() - 4) != ".pre")
   {
     cerr << "Arquivo '" + argument_3 + "' nao e aceito." << endl;
     return 1;
@@ -960,15 +932,9 @@ int main(int argc, char *argv[])
   }
   else
   {
-    output_file_name = argument_3.substr(0, argument_3.length() - 4) + ".pre";
-    pre_processor(argument_3, output_file_name);
-
     output_file_name = argument_3.substr(0, argument_3.length() - 4) + ".obj";
-    assembler(argument_3.substr(0, argument_3.length() - 4) + ".pre", output_file_name);
+    assembler(argument_3, output_file_name);
   }
 
   return 0;
 }
-
-/* A fazer:
-  - Testar */
