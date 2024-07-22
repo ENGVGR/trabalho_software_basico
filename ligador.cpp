@@ -28,6 +28,8 @@ int main(int argc, char* argv[])
     std::vector<int> codigo;
     std::vector<int> relatives;
     std::vector<int> fator;
+    std::string outputFile = argv[1];
+
     // Check if the correct number of arguments (file names) are passed
     if (argc != 3) {
         std::cerr << "Usage: " << argv[0] << " <objFile1> <objFile2>" << std::endl;
@@ -114,7 +116,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    std::ofstream objFile("output.e");
+    std::ofstream objFile(outputFile.substr(0, outputFile.length() - 4)+".e");
     std::string saida;
     for(int i = 0; i < codigo.size(); i++){
         if(codigo[i]<=9 && codigo[i]>=0){
